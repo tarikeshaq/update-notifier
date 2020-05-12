@@ -3,7 +3,10 @@ name = "update-notifier"
 version = "0.1.0"
 authors = ["Tarik Eshaq"]
 edition = "2018"
-licence = "MPL-2.0"
+license = "MPL-2.0"
+homepage = "https://github.com/tarikeshaq/update-notifier"
+repository = "https://github.com/tarikeshaq/update-notifier"
+description = "Library to notify you if there are any newer versions, WORK IN PROGRESS"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
