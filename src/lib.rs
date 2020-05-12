@@ -73,6 +73,6 @@ mod tests {
 
     #[test]
     fn test_not_current_version() {
-        check_version("./test/Cargo.toml").unwrap();
+        check_version("./test/test.toml").unwrap();
     }
 }

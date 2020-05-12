@@ -1,6 +1,5 @@
 #Cargo.toml from https://github.com/vladikoff/a-s-dev as a test
 #Used for testing purposes
-
 [package]
 name = "asdev"
 version = "0.1.2"
