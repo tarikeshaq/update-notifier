@@ -1,6 +1,4 @@
 use crates_io_api::{SyncClient, Version};
-use toml;
-use std::fs;
 use serde::Deserialize;
 use thiserror;
 
@@ -40,21 +38,10 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
 }
 
 /// Validates current version of crate
-/// Takes a path to the Cargo.toml associated with the crate
+/// Takes the current name and version
 /// Prints directly to stdout (Will probably change to be more asynchrounos)
-pub fn check_version(cargo_toml_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let file_content = fs::read(cargo_toml_path)?;
-    let cargo_toml_file: CargoToml = toml::from_slice(&file_content)?;
-    let current_version =  match cargo_toml_file.package.version {
-        Some(val) => val,
-        None => Err(Error::VersionDoesNotExist)?
-    };
-    let package_name = match cargo_toml_file.package.name {
-        Some(name) => name,
-        None => Err(Error::NameDoesNotExist)?
-    };
-
-    let latest_version = get_latest_version(&package_name)?;
+pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let latest_version = get_latest_version(name)?;
     if latest_version != current_version {
         println!("Version {} is available!", latest_version);
     }
@@ -73,6 +60,6 @@ mod tests {
 
     #[test]
     fn test_not_current_version() {
-        check_version("./test/test.toml").unwrap();
+        check_version("asdev", "0.1.2").unwrap();
     }
 }
