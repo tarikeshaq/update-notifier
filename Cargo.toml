@@ -1,6 +1,6 @@
 [package]
 name = "update-notifier"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Tarik Eshaq"]
 edition = "2018"
 license = "MPL-2.0"
@@ -12,6 +12,4 @@ description = "Library to notify you if there are any newer versions, WORK IN PR
 
 [dependencies]
 crates_io_api = "0.5.1"
-serde_derive = "1.0.110"
-serde = "1.0.110"
 thiserror = "1.0"

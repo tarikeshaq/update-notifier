@@ -1,5 +1,4 @@
 use crates_io_api::{SyncClient, Version};
-use serde::Deserialize;
 use thiserror;
 
 #[derive(Debug, thiserror::Error)]
@@ -13,28 +12,26 @@ pub enum Error {
     #[error("Cargo.Toml does not contain name")]
     NameDoesNotExist,
 }
-#[derive(Deserialize)]
-struct CargoToml {
-    package: Package
-}
-
-#[derive(Deserialize)]
-struct Package {
-    name: Option<String>,
-    version: Option<String>,
-}
 
 fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Error>> {
     let client = SyncClient::new();
     let retrieved_crate = match client.get_crate(crate_name) {
         Ok(val) => val,
-        Err(_) => Err(Error::CrateDoesNotExist)?
+        Err(_) => Err(Error::CrateDoesNotExist)?,
     };
     let versions: Vec<Version> = retrieved_crate.versions;
     match versions.first() {
         Some(version) => Ok(version.num.clone()),
-        None => Err(Error::VersionDoesNotExistCratesIO)?
+        None => Err(Error::VersionDoesNotExistCratesIO)?,
     }
+}
+
+/// Uses cargo environment variables to check for version and name
+/// does has the same behavior as check_version after that
+pub fn check_version_with_env() -> Result<(), Box<dyn std::error::Error>> {
+    let version = env!("CARGO_PKG_VERSION");
+    let name = env!("CARGO_PKG_NAME");
+    check_version(name, version)
 }
 
 /// Validates current version of crate
@@ -43,11 +40,19 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
 pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn std::error::Error>> {
     let latest_version = get_latest_version(name)?;
     if latest_version != current_version {
-        println!("Version {} is available!", latest_version);
+        println!("===================================");
+        println!();
+        println!("A new version of {} is available!", name);
+        println!(
+            "Use `$ cargo install {}` to install version {}",
+            name, latest_version
+        );
+        println!("Disregard this message of you are intentionally using an older version, or are working on an unpublished version");
+        println!();
+        println!("===================================");
     }
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
