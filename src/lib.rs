@@ -29,9 +29,9 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
 /// Uses cargo environment variables to check for version and name
 /// does has the same behavior as check_version after that
 pub fn check_version_with_env() -> Result<(), Box<dyn std::error::Error>> {
-    let version = env!("CARGO_PKG_VERSION");
-    let name = env!("CARGO_PKG_NAME");
-    check_version(name, version)
+    let version = std::env::var("CARGO_PKG_VERSION")?;
+    let name = std::env::var("CARGO_PKG_NAME")?;
+    check_version(&name, &version)
 }
 
 /// Validates current version of crate
@@ -66,5 +66,12 @@ mod tests {
     #[test]
     fn test_not_current_version() {
         check_version("asdev", "0.1.2").unwrap();
+    }
+
+    #[test]
+    fn test_env_variables() {
+        std::env::set_var("CARGO_PKG_NAME", "asdev");
+        std::env::set_var("CARGO_PKG_VERSION", "0.1.2");
+        check_version_with_env().unwrap();
     }
 }
