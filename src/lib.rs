@@ -31,6 +31,7 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
 pub fn check_version_with_env() -> Result<(), Box<dyn std::error::Error>> {
     let version = std::env::var("CARGO_PKG_VERSION")?;
     let name = std::env::var("CARGO_PKG_NAME")?;
+    println!("Name: {}, Version: {}", name, version);
     check_version(&name, &version)
 }
 
