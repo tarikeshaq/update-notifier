@@ -7,10 +7,6 @@ pub enum Error {
     CrateDoesNotExist,
     #[error("Versions Do not exist on crates.io")]
     VersionDoesNotExistCratesIO,
-    #[error("Version does not exist on Cargo.toml")]
-    VersionDoesNotExist,
-    #[error("Cargo.Toml does not contain name")]
-    NameDoesNotExist,
 }
 
 fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Error>> {
@@ -24,15 +20,6 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
         Some(version) => Ok(version.num.clone()),
         None => Err(Error::VersionDoesNotExistCratesIO)?,
     }
-}
-
-/// Uses cargo environment variables to check for version and name
-/// does has the same behavior as check_version after that
-pub fn check_version_with_env() -> Result<(), Box<dyn std::error::Error>> {
-    let version = std::env::var("CARGO_PKG_VERSION")?;
-    let name = std::env::var("CARGO_PKG_NAME")?;
-    println!("Name: {}, Version: {}", name, version);
-    check_version(&name, &version)
 }
 
 /// Validates current version of crate
@@ -51,6 +38,7 @@ pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn st
         println!("Disregard this message of you are intentionally using an older version, or are working on an unpublished version");
         println!();
         println!("===================================");
+        println!();
     }
     Ok(())
 }
@@ -67,12 +55,5 @@ mod tests {
     #[test]
     fn test_not_current_version() {
         check_version("asdev", "0.1.2").unwrap();
-    }
-
-    #[test]
-    fn test_env_variables() {
-        std::env::set_var("CARGO_PKG_NAME", "asdev");
-        std::env::set_var("CARGO_PKG_VERSION", "0.1.2");
-        check_version_with_env().unwrap();
     }
 }
