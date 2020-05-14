@@ -3,16 +3,29 @@ use reqwest::blocking::Client;
 use reqwest::header;
 use serde_derive::Deserialize;
 
+const REGISTRY_URL: &'static str = "https://crates.io";
+
+#[cfg(test)]
+use mockito;
+
+fn get_base_url() -> String {
+    #[cfg(not(test))]
+    let url = format!("{}/api/v1/crates", REGISTRY_URL);
+    #[cfg(test)]
+    let url = format!("{}/api/v1/crates", mockito::server_url());
+    url
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum ErrorKind {
     #[error("Unable to find crate")]
     CrateDoesNotExist,
-    #[error("Versions Do not exist on crates.io")]
+    #[error("Versions do not exist on the registry")]
     VersionDoesNotExistCratesIO,
     #[error("Error while parsing json: {0}")]
     UnableToParseJson(String),
-    #[error("Error recieved from crates.io: {0}")]
-    CratesIOError(String),
+    #[error("Error received from registry: {0}")]
+    RegistryError(String),
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -41,10 +54,10 @@ fn get_latest_from_json(
         }
     } else if let Some(errors) = &resp.errors {
         match errors.first() {
-            Some(error) => Err(ErrorKind::CratesIOError(error.detail.clone()).into()),
-            None => {
-                Err(ErrorKind::UnableToParseJson("No errors in the erros array".to_string()).into())
-            }
+            Some(error) => Err(ErrorKind::RegistryError(error.detail.clone()).into()),
+            None => Err(
+                ErrorKind::UnableToParseJson("No errors in the errors array".to_string()).into(),
+            ),
         }
     } else {
         Err(ErrorKind::UnableToParseJson(
@@ -54,11 +67,13 @@ fn get_latest_from_json(
     }
 }
 
-fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn std::error::Error>> {
+pub fn get_latest_version(
+    crate_name: &str,
+) -> std::result::Result<String, Box<dyn std::error::Error>> {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         header::USER_AGENT,
-        header::HeaderValue::from_static("Update-notifer (teshaq@mozilla.com)"),
+        header::HeaderValue::from_static("Update-notifier (teshaq@mozilla.com)"),
     );
     let client = Client::builder().default_headers(headers).build()?;
     let base_url = get_base_url();
@@ -70,10 +85,7 @@ fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn s
     get_latest_from_json(&json_resp)
 }
 
-fn print_notice(name: &str, current_version: &str, latest_version: &str) {
-    println!();
-    println!("───────────────────────────────────────────────────────");
-    println!();
+pub fn generate_notice(name: &str, current_version: &str, latest_version: &str) -> String {
     let line_1 = format!(
         "A new version of {} is available! {} → {}",
         Green.bold().paint(name),
@@ -87,14 +99,20 @@ fn print_notice(name: &str, current_version: &str, latest_version: &str) {
     );
     let line_3 = format!(
         "Check {} for more details",
-        Yellow.paint(format!("https://crates.io/crates/{}", name))
+        Yellow.paint(format!("{}/crates/{}", REGISTRY_URL, name))
     );
-    println!("{}", line_1);
-    println!("{}", line_2);
-    println!("{}", line_3);
-    println!();
-    println!("───────────────────────────────────────────────────────");
-    println!();
+    format!(
+        "\n───────────────────────────────────────────────────────\n
+    {}
+    {}
+    {}
+    \n───────────────────────────────────────────────────────\n",
+        line_1, line_2, line_3
+    )
+}
+
+fn print_notice(name: &str, current_version: &str, latest_version: &str) {
+    print!("{}", generate_notice(name, current_version, latest_version));
 }
 
 /// Validates current version of crate
@@ -109,103 +127,4 @@ pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn st
 }
 
 #[cfg(test)]
-use mockito;
-
-#[cfg(not(test))]
-const CRATES_IO_URL: &str = "https://crates.io";
-
-fn get_base_url() -> String {
-    #[cfg(not(test))]
-    let url = format!("{}/api/v1/crates", CRATES_IO_URL);
-    #[cfg(test)]
-    let url = format!("{}/api/v1/crates", mockito::server_url());
-    url
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use mockito::mock;
-    #[test]
-    fn test_latest_version() {
-        let m = mock("GET", "/api/v1/crates/asdev/versions")
-            .with_status(200)
-            .with_header("Content-Type", "application/json")
-            .with_body(
-                r#"
-        {"versions" : [
-            {
-                "id": 229435,
-                "crate": "asdev",
-                "num": "0.1.3"
-            }
-        ]}"#,
-            )
-            .create();
-        let latest_version = get_latest_version("asdev").unwrap();
-        m.expect(1).assert();
-        assert_eq!(latest_version, "0.1.3")
-    }
-
-    #[test]
-    fn test_no_crates_io_entry() {
-        let m = mock(
-            "GET",
-            "/api/v1/crates/kefjhkajvcnklsajdfhwksajnceknc/versions",
-        )
-        .with_status(404)
-        .with_header("Content-Type", "application/json")
-        .with_body(
-            r#"
-        {"errors":[{"detail":"Not Found"}]}"#,
-        )
-        .create();
-        let latest_version =
-            get_latest_version("kefjhkajvcnklsajdfhwksajnceknc").expect_err("Should be an error");
-        m.expect(1).assert();
-        assert_eq!(
-            latest_version.to_string(),
-            ErrorKind::CratesIOError("Not Found".to_string()).to_string()
-        );
-    }
-
-    #[test]
-    fn test_same_version() {
-        let m = mock("GET", "/api/v1/crates/asdev/versions")
-            .with_status(200)
-            .with_header("Content-Type", "application/json")
-            .with_body(
-                r#"
-        {"versions" : [
-            {
-                "id": 229435,
-                "crate": "asdev",
-                "num": "0.1.3"
-            }
-        ]}"#,
-            )
-            .create();
-        check_version("asdev", "0.1.3").unwrap();
-        m.expect(1).assert();
-    }
-
-    #[test]
-    fn test_not_update_available() {
-        let m = mock("GET", "/api/v1/crates/asdev/versions")
-            .with_status(200)
-            .with_header("Content-Type", "application/json")
-            .with_body(
-                r#"
-        {"versions" : [
-            {
-                "id": 229435,
-                "crate": "asdev",
-                "num": "0.1.3"
-            }
-        ]}"#,
-            )
-            .create();
-        check_version("asdev", "0.1.2").unwrap();
-        m.expect(1).assert();
-    }
-}
+mod tests;
