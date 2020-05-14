@@ -37,21 +37,20 @@ fn get_latest_from_json(
     if let Some(versions) = &resp.versions {
         match versions.first() {
             Some(version) => Ok(version.num.clone()),
-            None => Err(ErrorKind::UnableToParseJson(
-                "Versions array is empty".to_string(),
-            ))?,
+            None => Err(ErrorKind::UnableToParseJson("Versions array is empty".to_string()).into()),
         }
     } else if let Some(errors) = &resp.errors {
         match errors.first() {
-            Some(error) => Err(ErrorKind::CratesIOError(error.detail.clone()))?,
-            None => Err(ErrorKind::UnableToParseJson(
-                "No errors in the erros array".to_string(),
-            ))?,
+            Some(error) => Err(ErrorKind::CratesIOError(error.detail.clone()).into()),
+            None => {
+                Err(ErrorKind::UnableToParseJson("No errors in the erros array".to_string()).into())
+            }
         }
     } else {
         Err(ErrorKind::UnableToParseJson(
             "Invalid json response, does not have versions or errors".to_string(),
-        ))?
+        )
+        .into())
     }
 }
 
@@ -66,7 +65,7 @@ fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn s
     let url = format!("{}/{}/versions", base_url, crate_name);
     let json_resp = match client.get(&url).send()?.json() {
         Ok(resp) => resp,
-        Err(e) => Err(ErrorKind::UnableToParseJson(e.to_string()))?,
+        Err(e) => return Err(ErrorKind::UnableToParseJson(e.to_string()).into()),
     };
     get_latest_from_json(&json_resp)
 }
@@ -93,7 +92,7 @@ fn print_notice(name: &str, current_version: &str, latest_version: &str) {
     println!("{}", line_1);
     println!("{}", line_2);
     println!("{}", line_3);
-    println!("");
+    println!();
     println!("───────────────────────────────────────────────────────");
     println!();
 }
