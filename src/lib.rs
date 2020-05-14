@@ -39,6 +39,7 @@ fn get_latest_from_json(resp: &Value) -> std::result::Result<String, Box<dyn std
                 }
             }
         }
+        Err(ErrorKind::CrateDoesNotExist)?
     }
     Err(ErrorKind::UnableToParseJson)?
 }
@@ -50,7 +51,8 @@ fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn s
         header::HeaderValue::from_static("Update-notifer (teshaq@mozilla.com)"),
     );
     let client = Client::builder().default_headers(headers).build()?;
-    let url = format!("https://crates.io/api/v1/crates/{}/versions", crate_name);
+    let base_url = get_base_url();
+    let url = format!("{}/{}/versions", base_url, crate_name);
     let json_resp = client.get(&url).send()?.json()?;
     get_latest_from_json(&json_resp)
 }
@@ -94,16 +96,103 @@ pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn st
 }
 
 #[cfg(test)]
+use mockito;
+
+#[cfg(not(test))]
+const CRATES_IO_URL: &str = "https://crates.io";
+
+fn get_base_url() -> String {
+    #[cfg(not(test))]
+    let url = format!("{}/api/v1/crates", CRATES_IO_URL);
+    #[cfg(test)]
+    let url = format!("{}/api/v1/crates", mockito::server_url());
+    url
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
+    use mockito::mock;
     #[test]
     fn test_latest_version() {
+        let m = mock("GET", "/api/v1/crates/asdev/versions")
+            .with_status(200)
+            .with_header("Content-Type", "application/json")
+            .with_body(
+                r#"
+        {"versions" : [
+            {
+                "id": 229435,
+                "crate": "asdev",
+                "num": "0.1.3"
+            }
+        ]}"#,
+            )
+            .create();
         let latest_version = get_latest_version("asdev").unwrap();
+        m.expect(1).assert();
         assert_eq!(latest_version, "0.1.3")
     }
 
     #[test]
-    fn test_not_current_version() {
+    fn test_no_crates_io_entry() {
+        let m = mock(
+            "GET",
+            "/api/v1/crates/kefjhkajvcnklsajdfhwksajnceknc/versions",
+        )
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(
+            r#"
+        {"errors":[{"detail":"Not Found"}]}"#,
+        )
+        .create();
+        let latest_version =
+            get_latest_version("kefjhkajvcnklsajdfhwksajnceknc").expect_err("Should be an error");
+        m.expect(1).assert();
+        assert_eq!(
+            latest_version.to_string(),
+            ErrorKind::CrateDoesNotExist.to_string()
+        );
+    }
+
+    #[test]
+    fn test_same_version() {
+        let m = mock("GET", "/api/v1/crates/asdev/versions")
+            .with_status(404)
+            .with_header("Content-Type", "application/json")
+            .with_body(
+                r#"
+        {"versions" : [
+            {
+                "id": 229435,
+                "crate": "asdev",
+                "num": "0.1.3"
+            }
+        ]}"#,
+            )
+            .create();
+        check_version("asdev", "0.1.3").unwrap();
+        m.expect(1).assert();
+    }
+
+    #[test]
+    fn test_not_update_available() {
+        let m = mock("GET", "/api/v1/crates/asdev/versions")
+            .with_status(404)
+            .with_header("Content-Type", "application/json")
+            .with_body(
+                r#"
+        {"versions" : [
+            {
+                "id": 229435,
+                "crate": "asdev",
+                "num": "0.1.3"
+            }
+        ]}"#,
+            )
+            .create();
         check_version("asdev", "0.1.2").unwrap();
+        m.expect(1).assert();
     }
 }
