@@ -140,7 +140,7 @@ mod tests {
             "GET",
             "/api/v1/crates/kefjhkajvcnklsajdfhwksajnceknc/versions",
         )
-        .with_status(200)
+        .with_status(404)
         .with_header("Content-Type", "application/json")
         .with_body(
             r#"
@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn test_same_version() {
         let m = mock("GET", "/api/v1/crates/asdev/versions")
-            .with_status(404)
+            .with_status(200)
             .with_header("Content-Type", "application/json")
             .with_body(
                 r#"
@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn test_not_update_available() {
         let m = mock("GET", "/api/v1/crates/asdev/versions")
-            .with_status(404)
+            .with_status(200)
             .with_header("Content-Type", "application/json")
             .with_body(
                 r#"
