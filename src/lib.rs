@@ -3,7 +3,7 @@ use reqwest::blocking::Client;
 use reqwest::header;
 use serde_derive::Deserialize;
 
-const REGISTRY_URL: &'static str = "https://crates.io";
+const REGISTRY_URL: &str = "https://crates.io";
 
 #[cfg(test)]
 use mockito;
