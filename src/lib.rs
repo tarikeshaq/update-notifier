@@ -1,3 +1,4 @@
+use ansi_term::Color::{Blue, Green, Red, Yellow};
 use crates_io_api::{SyncClient, Version};
 use thiserror;
 
@@ -22,23 +23,40 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
     }
 }
 
+fn print_notice(name: &str, current_version: &str, latest_version: &str) {
+    println!();
+    println!("────────────────────────────────────────────────────────────────────────────");
+    println!();
+    let line_1 = format!(
+        "A new version of {} is available! {} → {}",
+        Green.bold().paint(name),
+        Red.bold().paint(current_version),
+        Green.bold().paint(latest_version)
+    );
+    let line_2 = format!(
+        "Use `{}` to install version {}",
+        Blue.bold().paint(format!("$ cargo install {}", name)),
+        Green.bold().paint(latest_version)
+    );
+    let line_3 = format!(
+        "Check {} for more details",
+        Yellow.paint(format!("https://crates.io/crates/{}", name))
+    );
+    println!("{}", line_1);
+    println!("{}", line_2);
+    println!("{}", line_3);
+    println!("");
+    println!("────────────────────────────────────────────────────────────────────────────");
+    println!();
+}
+
 /// Validates current version of crate
 /// Takes the current name and version
 /// Prints directly to stdout (Will probably change to be more asynchrounos)
 pub fn check_version(name: &str, current_version: &str) -> Result<(), Box<dyn std::error::Error>> {
     let latest_version = get_latest_version(name)?;
     if latest_version != current_version {
-        println!("===================================");
-        println!();
-        println!("A new version of {} is available!", name);
-        println!(
-            "Use `$ cargo install {}` to install version {}",
-            name, latest_version
-        );
-        println!("Disregard this message of you are intentionally using an older version, or are working on an unpublished version");
-        println!();
-        println!("===================================");
-        println!();
+        print_notice(name, current_version, &latest_version);
     }
     Ok(())
 }
