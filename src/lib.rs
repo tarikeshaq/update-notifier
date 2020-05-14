@@ -25,7 +25,7 @@ fn get_latest_version(crate_name: &str) -> Result<String, Box<dyn std::error::Er
 
 fn print_notice(name: &str, current_version: &str, latest_version: &str) {
     println!();
-    println!("────────────────────────────────────────────────────────────────────────────");
+    println!("───────────────────────────────────────────────────────");
     println!();
     let line_1 = format!(
         "A new version of {} is available! {} → {}",
@@ -35,7 +35,7 @@ fn print_notice(name: &str, current_version: &str, latest_version: &str) {
     );
     let line_2 = format!(
         "Use `{}` to install version {}",
-        Blue.bold().paint(format!("$ cargo install {}", name)),
+        Blue.bold().paint(format!("cargo install {}", name)),
         Green.bold().paint(latest_version)
     );
     let line_3 = format!(
@@ -46,7 +46,7 @@ fn print_notice(name: &str, current_version: &str, latest_version: &str) {
     println!("{}", line_2);
     println!("{}", line_3);
     println!("");
-    println!("────────────────────────────────────────────────────────────────────────────");
+    println!("───────────────────────────────────────────────────────");
     println!();
 }
 
