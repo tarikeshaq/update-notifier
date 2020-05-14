@@ -57,7 +57,7 @@ fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn s
     let client = Client::builder().default_headers(headers).build()?;
     let base_url = get_base_url();
     let url = format!("{}/{}/versions", base_url, crate_name);
-    let json_resp: VersionResponse = match client.get(&url).send()?.json() {
+    let json_resp = match client.get(&url).send()?.json() {
         Ok(resp) => resp,
         Err(_) => Err(ErrorKind::UnableToParseJson)?,
     };
