@@ -1,7 +1,6 @@
 use ansi_term::Color::{Blue, Green, Red, Yellow};
 use reqwest::blocking::Client;
 use reqwest::header;
-use serde_derive::Deserialize;
 use serde_json::Value;
 use thiserror;
 #[derive(Debug, thiserror::Error)]
@@ -12,16 +11,6 @@ pub enum ErrorKind {
     VersionDoesNotExistCratesIO,
     #[error("Unable to parse json")]
     UnableToParseJson,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct VersionResponse {
-    versions: Vec<Version>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-struct Version {
-    num: String,
 }
 
 fn get_latest_from_json(resp: &Value) -> std::result::Result<String, Box<dyn std::error::Error>> {
