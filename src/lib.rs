@@ -2,14 +2,15 @@ use ansi_term::Color::{Blue, Green, Red, Yellow};
 use reqwest::blocking::Client;
 use reqwest::header;
 use serde_derive::Deserialize;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ErrorKind {
     #[error("Unable to find crate")]
     CrateDoesNotExist,
     #[error("Versions Do not exist on crates.io")]
     VersionDoesNotExistCratesIO,
-    #[error("Error while parsing json")]
-    UnableToParseJson,
+    #[error("Error while parsing json: {0}")]
+    UnableToParseJson(String),
     #[error("Error recieved from crates.io: {0}")]
     CratesIOError(String),
 }
@@ -36,15 +37,21 @@ fn get_latest_from_json(
     if let Some(versions) = &resp.versions {
         match versions.first() {
             Some(version) => Ok(version.num.clone()),
-            None => Err(ErrorKind::UnableToParseJson)?,
+            None => Err(ErrorKind::UnableToParseJson(
+                "Versions array is empty".to_string(),
+            ))?,
         }
     } else if let Some(errors) = &resp.errors {
         match errors.first() {
             Some(error) => Err(ErrorKind::CratesIOError(error.detail.clone()))?,
-            None => Err(ErrorKind::UnableToParseJson)?,
+            None => Err(ErrorKind::UnableToParseJson(
+                "No errors in the erros array".to_string(),
+            ))?,
         }
     } else {
-        Err(ErrorKind::UnableToParseJson)?
+        Err(ErrorKind::UnableToParseJson(
+            "Invalid json response, does not have versions or errors".to_string(),
+        ))?
     }
 }
 
@@ -59,7 +66,7 @@ fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn s
     let url = format!("{}/{}/versions", base_url, crate_name);
     let json_resp = match client.get(&url).send()?.json() {
         Ok(resp) => resp,
-        Err(_) => Err(ErrorKind::UnableToParseJson)?,
+        Err(e) => Err(ErrorKind::UnableToParseJson(e.to_string()))?,
     };
     get_latest_from_json(&json_resp)
 }
