@@ -4,9 +4,13 @@ on: [push, pull_request]
 jobs:
   check:
     name: Check
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
         rust:
           - stable
     steps:
@@ -26,9 +30,13 @@ jobs:
 
   test:
     name: Test Suite
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
         rust:
           - stable
     steps:
@@ -48,9 +56,13 @@ jobs:
 
   fmt:
     name: Rustfmt
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
+          - macOS-latest
+          - windows-latest
         rust:
           - stable
     steps:
