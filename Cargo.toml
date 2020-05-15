@@ -11,6 +11,11 @@ description = "Library to notify you if there are any newer versions, WORK IN PR
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crates_io_api = "0.5.1"
 thiserror = "1.0"
 ansi_term = "0.12.1"
+reqwest = { version = "0.10.4", features = ["blocking", "json"] }
+serde = "1.0.110"
+serde_derive = "1.0.110"
+
+[dev-dependencies]
+mockito = "0.25.1"
