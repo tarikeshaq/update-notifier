@@ -1,4 +1,5 @@
 use super::*;
+use chrono::Datelike;
 use mockito::mock;
 #[test]
 fn test_latest_version() {
@@ -31,7 +32,7 @@ fn test_no_crates_io_entry() {
     .with_header("Content-Type", "application/json")
     .with_body(
         r#"
-            {"errors":[{"detail":"Not Found"}]}"#,
+                {"errors":[{"detail":"Not Found"}]}"#,
     )
     .create();
     let latest_version =
@@ -45,7 +46,7 @@ fn test_no_crates_io_entry() {
 
 #[test]
 fn test_same_version() {
-    let m = mock("GET", "/api/v1/crates/asdev/versions")
+    let m = mock("GET", "/api/v1/crates/sameVersion/versions")
         .with_status(200)
         .with_header("Content-Type", "application/json")
         .with_body(
@@ -53,19 +54,19 @@ fn test_same_version() {
             {"versions" : [
                 {
                     "id": 229435,
-                    "crate": "asdev",
+                    "crate": "sameVersion",
                     "num": "0.1.3"
                 }
             ]}"#,
         )
         .create();
-    check_version("asdev", "0.1.3").unwrap();
+    check_version("sameVersion", "0.1.3", Duration::from_nanos(0)).unwrap();
     m.expect(1).assert();
 }
 
 #[test]
 fn test_not_update_available() {
-    let m = mock("GET", "/api/v1/crates/asdev/versions")
+    let m = mock("GET", "/api/v1/crates/noUpdate/versions")
         .with_status(200)
         .with_header("Content-Type", "application/json")
         .with_body(
@@ -73,17 +74,60 @@ fn test_not_update_available() {
             {"versions" : [
                 {
                     "id": 229435,
-                    "crate": "asdev",
+                    "crate": "noUpdate",
                     "num": "0.1.3"
                 }
             ]}"#,
         )
         .create();
-    check_version("asdev", "0.1.2").unwrap();
+    check_version("noUpdate", "0.1.2", Duration::from_secs(0)).unwrap();
     m.expect(1).assert();
 }
 
 #[test]
 fn test_output() {
     assert_eq!(generate_notice("asdev", "0.1.2", "0.1.3"), "\n───────────────────────────────────────────────────────\n\n    A new version of \u{1b}[1;32masdev\u{1b}[0m is available! \u{1b}[1;31m0.1.2\u{1b}[0m → \u{1b}[1;32m0.1.3\u{1b}[0m\n    Use `\u{1b}[1;34mcargo install asdev\u{1b}[0m` to install version \u{1b}[1;32m0.1.3\u{1b}[0m\n    Check \u{1b}[33mhttps://crates.io/crates/asdev\u{1b}[0m for more details\n    \n───────────────────────────────────────────────────────\n");
+}
+
+#[test]
+fn test_interval_not_exceeded() {
+    let m = mock("GET", "/api/v1/crates/notExceeded/versions")
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(
+            r#"
+            {"versions" : [
+                {
+                    "id": 229435,
+                    "crate": "notExceeded",
+                    "num": "0.1.3"
+                }
+            ]}"#,
+        )
+        .create();
+    check_version("notExceeded", "0.1.2", Duration::from_secs(0)).unwrap();
+    check_version("notExceeded", "0.1.2", Duration::from_secs(1000 * 1000)).unwrap();
+    m.expect(1).assert()
+}
+
+#[test]
+fn test_interval_exceeded() {
+    let m = mock("GET", "/api/v1/crates/intervalExceeded/versions")
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(
+            r#"
+            {"versions" : [
+                {
+                    "id": 229435,
+                    "crate": "intervalExceeded",
+                    "num": "0.1.3"
+                }
+            ]}"#,
+        )
+        .create();
+
+    update_time(Utc::now().with_year(1999).unwrap(), "intervalExceeded").unwrap();
+    check_version("intervalExceeded", "0.1.2", Duration::from_secs(1000)).unwrap();
+    m.expect(1).assert()
 }
