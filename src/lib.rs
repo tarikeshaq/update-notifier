@@ -20,21 +20,15 @@ fn get_base_url() -> String {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ErrorKind {
-    #[error("Unable to find crate")]
-    CrateDoesNotExist,
-    #[error("Versions do not exist on the registry")]
-    VersionDoesNotExistCratesIO,
+enum ErrorKind {
     #[error("Error while parsing json: {0}")]
     UnableToParseJson(String),
     #[error("Error received from registry: {0}")]
     RegistryError(String),
-    #[error("Unable to find config")]
-    UnableToFindConfig,
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct VersionResponse {
+struct VersionResponse {
     versions: Option<Vec<Version>>,
     errors: Option<Vec<JsonError>>,
 }
@@ -72,9 +66,7 @@ fn get_latest_from_json(
     }
 }
 
-pub fn get_latest_version(
-    crate_name: &str,
-) -> std::result::Result<String, Box<dyn std::error::Error>> {
+fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn std::error::Error>> {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         header::USER_AGENT,
@@ -90,7 +82,7 @@ pub fn get_latest_version(
     get_latest_from_json(&json_resp)
 }
 
-pub fn generate_notice(name: &str, current_version: &str, latest_version: &str) -> String {
+fn generate_notice(name: &str, current_version: &str, latest_version: &str) -> String {
     let line_1 = format!(
         "A new version of {} is available! {} → {}",
         Green.bold().paint(name),
@@ -160,11 +152,30 @@ fn compare_with_latest(
     update_time(date_time, name)
 }
 
-/// Validates current version of the crate
-/// Takes the current name and version
-/// Takes a std::time::Duration to determine the interval
-///         So that it does not notify the user every run
-/// Prints directly to stdout (Will probably change to be more asynchrounos)
+/// Checks if there exists an update by checking against crates.io and notifies the user by printing to stdout
+///
+/// # Arguments
+///
+///   * `name` -  The name of the crate, you can use `env!("CARGO_PKG_NAME")`
+///   * `current_version` - The version of the CLI, use `env!("CARGO_PKG_VERSION")`
+///   * `interval` - Duration representing the interval.
+///
+/// # Examples
+///
+/// ```
+/// use update_notifier::check_version;
+///
+/// check_version(
+///   env!("CARGO_PKG_NAME"),
+///   env!("CARGO_PKG_VERSION"),
+///   std::time::Duration::from_secs(0),
+///   ).ok();
+//
+///```
+///
+/// # Errors
+///
+/// Could error either if your plateform does not have a config directory or if an the crate name is not in the registry
 pub fn check_version(
     name: &str,
     current_version: &str,
