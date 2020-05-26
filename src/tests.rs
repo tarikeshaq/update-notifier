@@ -86,7 +86,7 @@ fn test_not_update_available() {
 
 #[test]
 fn test_output() {
-    assert_eq!(generate_notice("asdev", "0.1.2", "0.1.3"), "\n───────────────────────────────────────────────────────\n\n    A new version of \u{1b}[1;32masdev\u{1b}[0m is available! \u{1b}[1;31m0.1.2\u{1b}[0m → \u{1b}[1;32m0.1.3\u{1b}[0m\n    Use `\u{1b}[1;34mcargo install asdev\u{1b}[0m` to install version \u{1b}[1;32m0.1.3\u{1b}[0m\n    Check \u{1b}[33mhttps://crates.io/crates/asdev\u{1b}[0m for more details\n    \n───────────────────────────────────────────────────────\n");
+    assert_eq!(generate_notice("asdev", "0.1.2", "0.1.3"), "\n────────────────────────────────────────────────────────────\n\n    A new version of \u{1b}[1;32masdev\u{1b}[0m is available! \u{1b}[1;31m0.1.2\u{1b}[0m → \u{1b}[1;32m0.1.3\u{1b}[0m\n    Use `\u{1b}[1;34mcargo install asdev\u{1b}[0m` to install version \u{1b}[1;32m0.1.3\u{1b}[0m\n    Check \u{1b}[33mhttps://crates.io/crates/asdev\u{1b}[0m for more details\n    \n────────────────────────────────────────────────────────────\n");
 }
 
 #[test]
