@@ -106,13 +106,19 @@ pub fn generate_notice(name: &str, current_version: &str, latest_version: &str) 
         "Check {} for more details",
         Yellow.paint(format!("{}/crates/{}", REGISTRY_URL, name))
     );
+    let mut border_line = String::from("\n───────────────────────────────────────────────────────");
+    let extension = "─";
+    for _ in 0..name.len() {
+        border_line.push_str(extension);
+    }
+    border_line.push('\n');
     format!(
-        "\n───────────────────────────────────────────────────────\n
+        "{}
     {}
     {}
     {}
-    \n───────────────────────────────────────────────────────\n",
-        line_1, line_2, line_3
+    {}",
+        border_line, line_1, line_2, line_3, border_line
     )
 }
 
