@@ -6,7 +6,8 @@ edition = "2018"
 license = "MPL-2.0"
 homepage = "https://github.com/tarikeshaq/update-notifier"
 repository = "https://github.com/tarikeshaq/update-notifier"
-description = "Library to notify you if there are any newer versions, WORK IN PROGRESS"
+description = "Library to notify you if there are any newer versions available on the registry"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
