@@ -36,6 +36,8 @@ fn main() {
 
 All contributions are welcome, feel free to file an issue or even a pull-request 🤝
 
+## Releases
+Releases are done using `cargo release`. Check [cargo-release](https://github.com/sunng87/cargo-release) for more information
 ## License
 
 This project is licensed under the [Mozilla Public License 2.0](https://github.com/tarikeshaq/update-notifier/blob/master/LICENSE)
