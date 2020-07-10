@@ -1,8 +1,7 @@
 use ansi_term::Color::{Blue, Green, Red, Yellow};
 use chrono::{DateTime, Utc};
 use configstore::{AppUI, Configstore};
-use reqwest::blocking::Client;
-use reqwest::header;
+use curl::easy::{Easy, List};
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -67,18 +66,29 @@ fn get_latest_from_json(
 }
 
 fn get_latest_version(crate_name: &str) -> std::result::Result<String, Box<dyn std::error::Error>> {
-    let mut headers = header::HeaderMap::new();
-    headers.insert(
-        header::USER_AGENT,
-        header::HeaderValue::from_static("Update-notifier (teshaq@mozilla.com)"),
-    );
-    let client = Client::builder().default_headers(headers).build()?;
+    // We use curl-rust here to save us importing a bunch of dependencies pulled in with reqwest
+    // We're okay with a blocking api since it's only one small request
+    let mut easy = Easy::new();
     let base_url = get_base_url();
     let url = format!("{}/{}/versions", base_url, crate_name);
-    let json_resp = match client.get(&url).send()?.json() {
-        Ok(resp) => resp,
-        Err(e) => return Err(ErrorKind::UnableToParseJson(e.to_string()).into()),
-    };
+    easy.url(&url)?;
+    let mut list = List::new();
+    list.append("USER-AGENT Update-notifier (teshaq@mozilla.com)")?;
+    easy.http_headers(list)?;
+    let mut resp_buf = Vec::new();
+    // Create a different lifetime for `transfer` since it
+    // borrows resp_buf in it's closure
+    {
+        let mut transfer = easy.transfer();
+        transfer.write_function(|data| {
+            resp_buf.extend_from_slice(data);
+            Ok(data.len())
+        })?;
+        transfer.perform()?;
+    }
+    let resp = std::str::from_utf8(&resp_buf)?;
+
+    let json_resp: VersionResponse = serde_json::from_str(resp)?;
     get_latest_from_json(&json_resp)
 }
 
