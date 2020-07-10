@@ -1,6 +1,6 @@
 [package]
 name = "update-notifier"
-version = "0.1.9-alpha.0"
+version = "0.1.9"
 authors = ["Tarik Eshaq"]
 edition = "2018"
 license = "MPL-2.0"
